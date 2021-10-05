@@ -1,9 +1,9 @@
-from dataclasses import dataclass, field
 import os
 import random
 import sys
 import time
 from collections import deque
+from dataclasses import dataclass, field
 from functools import partialmethod
 
 katana = range(0xFF65, 0xFF9E)
@@ -86,10 +86,10 @@ def random_stream():
     )
 
 
-def rain(max_streams, delay=0.005):
+def rain(stream_factory, max_streams=10, delay=0.005):
     active = set()
     done = set()
-    spawn = lambda n: (random_stream() for _ in range(n))
+    spawn = lambda n: (stream_factory() for _ in range(n))
 
     while True:
         active.update(spawn(max_streams - len(active)))
@@ -103,18 +103,17 @@ def rain(max_streams, delay=0.005):
 
 
 def main():
-    # disable cursos
     print("\x1b[?25l\x1b[s", end="")
 
     try:
-        for drop in rain(100):
+        for drop in rain(random_stream, 100):
             print(drop, end="", flush=True)
             # print(repr(drop), flush=True)
 
     except KeyboardInterrupt:
         sys.exit()
 
-    # print('\x1b[m\x1b[2J\x1b[u\x1b[?25h', end='')
+    print('\x1b[m\x1b[2J\x1b[u\x1b[?25h', end='')
 
 
 if __name__ == "__main__":
