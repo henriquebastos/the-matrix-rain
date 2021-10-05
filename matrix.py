@@ -1,3 +1,4 @@
+import os
 import random
 import sys
 import time
@@ -27,11 +28,11 @@ blackdrop = partial(colordrop, color=BLACK, style=BOLD)
 erase = lambda d: blackdrop(Drop(d.x, d.y, BLANK))
 
 
-def stream(x, y, length, speed):
+def stream(x, y, length, speed, ttl):
     drop = Drop(x, y, '')
     glyphs = deque()
 
-    while True:
+    for _ in countdown(ttl):
         for _ in countdown(speed):
             drop = Drop(x, y, glyph())
             yield whitedrop(drop)
@@ -45,23 +46,50 @@ def stream(x, y, length, speed):
             yield erase(glyphs.popleft())
             yield blackdrop(glyphs[0])
 
+    while glyphs:
+        yield blackdrop(glyphs[0])
+        yield erase(glyphs.popleft())
+
+
+def random_stream():
+    w, h = os.get_terminal_size()
+    min_len, max_len = 5, h//2
+    min_x, max_x = 1, w
+    min_y, max_y = 1, h//3
+    min_speed, max_speed = 3, 15
+
+    length = random.randint(min_len, max_len)
+    ttl = random.randint(length, length * 3)
+
+    return stream(random.randint(min_x, max_x),
+                  random.randint(min_y, max_y),
+                  length,
+                  random.randint(min_speed, max_speed),
+                  ttl)
+
 
 def main():
     # disable cursos
     print('\x1b[?25l\x1b[s', end='')
 
-    x, y = 1, 1
-    length = 9
-    speed = 10
+    streams = {random_stream() for _ in range(250)}
 
     try:
-        for s in stream(x, y, length, speed):
-            print(s, end='', flush=True)
-            time.sleep(0.01)
+        done = set()
+        while streams:
+            for s in streams:
+                try:
+                    d = next(s)
+                    print(d, end='', flush=True)
+                except StopIteration:
+                    done.add(s)
+            streams.difference_update(done)
+            time.sleep(0.005)
+
     except KeyboardInterrupt:
         sys.exit()
 
-    print('\x1b[m\x1b[2J\x1b[u\x1b[?25h', end='')
+    # print('\x1b[m\x1b[2J\x1b[u\x1b[?25h', end='')
 
 
 if __name__ == '__main__':
