@@ -11,9 +11,11 @@ numbers = range(0x30, 0x3A)
 chars = [chr(n) for n in (*katana, *numbers)]
 glyph = lambda: random.choice(chars)
 
+countdown = lambda total: range(total - 1, -1, -1)
+
 BLACK, WHITE, GREEN = 30, 37, 32
 NORMAL, BOLD = 0, 1
-BLANK, RANDOM = ' ', object()
+BLANK = " "
 
 
 @dataclass
@@ -25,23 +27,20 @@ class Drop:
     style: int = BOLD
 
     def __str__(self):
-        return (f'\x1b[{self.y};{self.x}f\x1b[{self.color};'
-                f'{self.style}m{self.char}')
+        return f"\x1b[{self.y};{self.x}f\x1b[{self.color};{self.style}m{self.char}"
 
     def empty(self):
         self.__dict__.update(char=BLANK, color=BLACK)
         return self
 
-    def color(self, value):
+    def _color(self, value):
         self.color = value
         return self
 
-    white = partialmethod(color, WHITE)
-    green = partialmethod(color, GREEN)
-    black = partialmethod(color, BLACK)
+    white = partialmethod(_color, WHITE)
+    green = partialmethod(_color, GREEN)
+    black = partialmethod(_color, BLACK)
 
-
-countdown = lambda total: range(total-1, -1, -1)
 
 def stream(x, y, length, speed, ttl):
     drop = None
@@ -70,34 +69,22 @@ def stream(x, y, length, speed, ttl):
 
 def random_stream():
     w, h = os.get_terminal_size()
-    min_len, max_len = 5, h//2
+    min_len, max_len = 5, h // 2
     min_x, max_x = 1, w
-    min_y, max_y = 1, h//3
+    min_y, max_y = 1, h // 3
     min_speed, max_speed = 3, 15
 
     length = random.randint(min_len, max_len)
     ttl = random.randint(length, length * 2)
 
-    return stream(random.randint(min_x, max_x),
-                  random.randint(min_y, max_y),
-                  length,
-                  random.randint(min_speed, max_speed),
-                  ttl)
+    return stream(
+        random.randint(min_x, max_x),
+        random.randint(min_y, max_y),
+        length,
+        random.randint(min_speed, max_speed),
+        ttl,
+    )
 
-
-def main():
-    # disable cursos
-    print('\x1b[?25l\x1b[s', end='')
-
-    try:
-        for drop in rain(100):
-            print(drop, end='', flush=True)
-            #print(repr(drop), flush=True)
-
-    except KeyboardInterrupt:
-        sys.exit()
-
-    # print('\x1b[m\x1b[2J\x1b[u\x1b[?25h', end='')
 
 def rain(max_streams, delay=0.005):
     active = set()
@@ -105,7 +92,7 @@ def rain(max_streams, delay=0.005):
     spawn = lambda n: (random_stream() for _ in range(n))
 
     while True:
-        active.update(spawn(max_streams-len(active)))
+        active.update(spawn(max_streams - len(active)))
         for stream in active:
             try:
                 yield next(stream)
@@ -115,6 +102,20 @@ def rain(max_streams, delay=0.005):
         time.sleep(delay)
 
 
+def main():
+    # disable cursos
+    print("\x1b[?25l\x1b[s", end="")
 
-if __name__ == '__main__':
+    try:
+        for drop in rain(100):
+            print(drop, end="", flush=True)
+            # print(repr(drop), flush=True)
+
+    except KeyboardInterrupt:
+        sys.exit()
+
+    # print('\x1b[m\x1b[2J\x1b[u\x1b[?25h', end='')
+
+
+if __name__ == "__main__":
     main()
