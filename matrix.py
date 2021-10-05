@@ -1,9 +1,10 @@
+from dataclasses import dataclass, field
 import os
 import random
 import sys
 import time
-from collections import deque, namedtuple
-from functools import partial
+from collections import deque
+from functools import partialmethod
 
 katana = range(0xFF65, 0xFF9E)
 numbers = range(0x30, 0x3A)
@@ -12,45 +13,59 @@ glyph = lambda: random.choice(chars)
 
 BLACK, WHITE, GREEN = 30, 37, 32
 NORMAL, BOLD = 0, 1
-BLANK = ' '
+BLANK, RANDOM = ' ', object()
+
+
+@dataclass
+class Drop:
+    x: int
+    y: int
+    char: str = field(default_factory=glyph)
+    color: int = BLACK
+    style: int = BOLD
+
+    def __str__(self):
+        return (f'\x1b[{self.y};{self.x}f\x1b[{self.color};'
+                f'{self.style}m{self.char}')
+
+    def empty(self):
+        self.__dict__.update(char=BLANK, color=BLACK)
+        return self
+
+    def color(self, value):
+        self.color = value
+        return self
+
+    white = partialmethod(color, WHITE)
+    green = partialmethod(color, GREEN)
+    black = partialmethod(color, BLACK)
+
 
 countdown = lambda total: range(total-1, -1, -1)
 
-Drop = namedtuple('Drop', 'x y char')
-
-def colordrop(drop, color, style):
-    return (f'\x1b[{drop.y};{drop.x}f\x1b[{color};'
-            f'{style}m{drop.char}')
-
-whitedrop = partial(colordrop, color=WHITE, style=BOLD)
-greendrop = partial(colordrop, color=GREEN, style=BOLD)
-blackdrop = partial(colordrop, color=BLACK, style=BOLD)
-erase = lambda d: blackdrop(Drop(d.x, d.y, BLANK))
-
-
 def stream(x, y, length, speed, ttl):
-    drop = Drop(x, y, '')
+    drop = None
     glyphs = deque()
 
     for _ in countdown(ttl):
         for _ in countdown(speed):
-            drop = Drop(x, y, glyph())
-            yield whitedrop(drop)
+            drop = Drop(x, y)
+            yield drop.white()
 
         y += 1
         glyphs.append(drop)
 
-        yield greendrop(drop)
+        yield drop.green()
 
         if len(glyphs) > length:
-            yield erase(glyphs.popleft())
-            yield blackdrop(glyphs[0])
+            yield glyphs.popleft().empty()
+            yield glyphs[0].black()
 
     while len(glyphs) > 1:
-        yield erase(glyphs.popleft())
-        yield blackdrop(glyphs[0])
+        yield glyphs.popleft().empty()
+        yield glyphs[0].black()
 
-    yield erase(glyphs.popleft())
+    yield glyphs.popleft().empty()
 
 
 def random_stream():
@@ -77,6 +92,7 @@ def main():
     try:
         for drop in rain(100):
             print(drop, end='', flush=True)
+            #print(repr(drop), flush=True)
 
     except KeyboardInterrupt:
         sys.exit()
