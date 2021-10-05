@@ -14,7 +14,9 @@ python matrix.py
 
 ## Author
 
-Henrique Bastos (henrique@bastos.net)
+Henrique Bastos
+henrique@bastos.net
+https://henriquebastos.net
 
 ## License
 
