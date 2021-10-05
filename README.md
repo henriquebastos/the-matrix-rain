@@ -6,8 +6,8 @@ Fun project to generate The Matrix Code effect on you terminal.
 
 ## Install
 
-```
-https://github.com/henriquebastos/the-matrix-rain
+```console
+git clone https://github.com/henriquebastos/the-matrix-rain
 cd the-matrix-rain
 python matrix.py
 ```
