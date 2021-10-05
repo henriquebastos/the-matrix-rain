@@ -17,6 +17,7 @@ python matrix.py
 Henrique Bastos
 henrique@bastos.net
 https://henriquebastos.net
+https://instagram.com/henriquebastosnet
 
 ## License
 
