@@ -46,9 +46,11 @@ def stream(x, y, length, speed, ttl):
             yield erase(glyphs.popleft())
             yield blackdrop(glyphs[0])
 
-    while glyphs:
-        yield blackdrop(glyphs[0])
+    while len(glyphs) > 1:
         yield erase(glyphs.popleft())
+        yield blackdrop(glyphs[0])
+
+    yield erase(glyphs.popleft())
 
 
 def random_stream():
@@ -59,7 +61,7 @@ def random_stream():
     min_speed, max_speed = 3, 15
 
     length = random.randint(min_len, max_len)
-    ttl = random.randint(length, length * 3)
+    ttl = random.randint(length, length * 2)
 
     return stream(random.randint(min_x, max_x),
                   random.randint(min_y, max_y),
@@ -72,24 +74,30 @@ def main():
     # disable cursos
     print('\x1b[?25l\x1b[s', end='')
 
-    streams = {random_stream() for _ in range(250)}
-
     try:
-        done = set()
-        while streams:
-            for s in streams:
-                try:
-                    d = next(s)
-                    print(d, end='', flush=True)
-                except StopIteration:
-                    done.add(s)
-            streams.difference_update(done)
-            time.sleep(0.005)
+        for drop in rain(100):
+            print(drop, end='', flush=True)
 
     except KeyboardInterrupt:
         sys.exit()
 
     # print('\x1b[m\x1b[2J\x1b[u\x1b[?25h', end='')
+
+def rain(max_streams, delay=0.005):
+    active = set()
+    done = set()
+    spawn = lambda n: (random_stream() for _ in range(n))
+
+    while True:
+        active.update(spawn(max_streams-len(active)))
+        for stream in active:
+            try:
+                yield next(stream)
+            except StopIteration:
+                done.add(stream)
+        active.difference_update(done)
+        time.sleep(delay)
+
 
 
 if __name__ == '__main__':
